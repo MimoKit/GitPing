@@ -211,7 +211,7 @@ async def update_subscription_cursor(key: str, *, commit: str = "", tag: str = "
         data = _read()
         subs = _load_subscriptions(data)
         changed = False
-        for sub in subs:
+        for i, sub in enumerate(subs):
             if sub.key != key:
                 continue
             if commit and sub.last_commit != commit:
@@ -220,7 +220,7 @@ async def update_subscription_cursor(key: str, *, commit: str = "", tag: str = "
             if tag and sub.last_tag != tag:
                 sub = Subscription(**{**asdict(sub), "last_tag": tag})
                 changed = True
-            subs[subs.index(sub)] = sub
+            subs[i] = sub
         if changed:
             data["subscriptions"] = [asdict(s) for s in subs]
             _write(data)

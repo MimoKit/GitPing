@@ -73,8 +73,8 @@ def _find_bot(bot_id: str):
     return None
 
 
-async def _push(sub: Subscription, card: bytes, kind: str) -> bool:
-    """把卡片推到订阅的群。"""
+async def _push_fallback(sub: Subscription, card: bytes, kind: str) -> bool:
+    """本地兜底推送（当 gs_subscribe 未命中或异常时触发）。"""
     bot = _find_bot(sub.bot_id)
     if bot is None:
         logger.warning(
@@ -91,11 +91,53 @@ async def _push(sub: Subscription, card: bytes, kind: str) -> bool:
             "",
             "",
         )
-        logger.info(f"[GitPing] 🚀 成功推送 {sub.slug} 的{kind}到群 {sub.group_id}")
+        logger.info(f"[GitPing] 🚀 [Fallback] 成功推送 {sub.slug} 的{kind}到群 {sub.group_id}")
         return True
     except Exception:
-        logger.warning(f"[GitPing] 推送 {sub.slug} 到群 {sub.group_id} 失败", exc_info=True)
+        logger.warning(f"[GitPing] [Fallback] 推送 {sub.slug} 到群 {sub.group_id} 失败", exc_info=True)
         return False
+
+
+async def _dispatch_push(sub: Subscription, card: bytes, kind: str, target_group: str = "") -> int:
+    """优先使用 GsCore 官方标准 gs_subscribe 体系进行推送分发；若未注册则走本地兜底。"""
+    pushed = 0
+    try:
+        from gsuid_core.subscribe import gs_subscribe
+
+        task_name = f"[GitPing] {sub.platform}:{sub.owner}/{sub.repo}"
+        gs_subs = await gs_subscribe.get_subscribe(task_name=task_name)
+        if not gs_subs:
+            legacy_subs = await gs_subscribe.get_subscribe(task_name=SUBSCRIBE_TASK)
+            if legacy_subs:
+                gs_subs = [
+                    s
+                    for s in legacy_subs
+                    if getattr(s, "extra_data", "") == f"{sub.platform}:{sub.owner}/{sub.repo}"
+                ]
+
+        if gs_subs:
+            for gs_sub in gs_subs:
+                if target_group and str(getattr(gs_sub, "group_id", "")) != str(target_group):
+                    continue
+                try:
+                    await gs_sub.send(reply=card)
+                    logger.info(f"[GitPing] 🚀 [gs_subscribe] 成功推送 {sub.slug} 的{kind}到群 {gs_sub.group_id}")
+                    pushed += 1
+                except Exception:
+                    logger.warning(
+                        f"[GitPing] [gs_subscribe] 推送 {sub.slug} 到群 {getattr(gs_sub, 'group_id', '')} 失败",
+                        exc_info=True,
+                    )
+            if pushed > 0 or (target_group and any(str(getattr(s, "group_id", "")) == str(target_group) for s in gs_subs)):
+                return pushed
+    except Exception as e:
+        logger.warning(f"[GitPing] 调用 gs_subscribe 推送异常: {e}，尝试本地兜底", exc_info=True)
+
+    if not target_group or str(sub.group_id) == str(target_group):
+        if await _push_fallback(sub, card, kind):
+            pushed += 1
+
+    return pushed
 
 
 async def check_subscriptions(*, force_push: bool = False, target_group: str = "") -> int:
@@ -134,8 +176,7 @@ async def check_subscriptions(*, force_push: bool = False, target_group: str = "
                 should_push = force_push or (sub.last_commit and latest.sha != sub.last_commit)
                 if should_push:
                     card = await render_commit(sub.platform, sub.owner, sub.repo, latest, note="新提交推送")
-                    if await _push(sub, card, "新提交"):
-                        pushed_count += 1
+                    pushed_count += await _dispatch_push(sub, card, "新提交", target_group=target_group)
         except Exception as exc:
             logger.warning(f"[GitPing] 检查 {sub.slug} 提交失败: {exc}")
 
@@ -146,8 +187,7 @@ async def check_subscriptions(*, force_push: bool = False, target_group: str = "
                 should_push_rel = force_push or (sub.last_tag and rel.tag != sub.last_tag)
                 if should_push_rel:
                     card = await render_release(sub.platform, sub.owner, sub.repo, rel, note="新版本发布")
-                    if await _push(sub, card, "新版本"):
-                        pushed_count += 1
+                    pushed_count += await _dispatch_push(sub, card, "新版本", target_group=target_group)
         except Exception as exc:
             logger.warning(f"[GitPing] 检查 {sub.slug} 版本失败: {exc}")
 

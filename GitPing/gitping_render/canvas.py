@@ -235,11 +235,11 @@ def request_timeout() -> float:
     return float(config_int("request_timeout", 15))
 
 
-# 采用 2.5x 超视网膜极清比例（1080px -> 2700px 宽度，发丝级文字细节，兼顾秒级出图与极致画质）
-DEFAULT_SCALE = 2.5
+# 采用 2.0x 视网膜高清比例（1080px -> 2160px，兼顾秒级出图、文字锐利度与 QQ 平台传输规格）
+DEFAULT_SCALE = 2.0
 
 
-async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes:
+async def render(html: str, *, min_height: int = 500, scale: float = 0) -> bytes:
     """按配置选择后端渲染 HTML，返回 PNG 字节。"""
     backend = resolve_backend()
     scale = scale or DEFAULT_SCALE
@@ -255,28 +255,6 @@ async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes
     return await _render_builtin(html, min_height=min_height, scale=scale)
 
 
-def ensure_ultra_hd(png_bytes: bytes, target_min_mb: float = 5.0) -> bytes:
-    """输出完全无压缩原画，使出图大小强制大于 5MB（通常在 6MB~9MB 之间），完全满足 QQ 高清原图需求。"""
-    try:
-        from PIL import Image
-        import io
-
-        img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
-        out = io.BytesIO()
-        img.save(out, format="PNG", compress_level=0)
-        data = out.getvalue()
-        if len(data) >= target_min_mb * 1024 * 1024:
-            return data
-        # 若高度较短导致不足 5MB，以 RGBA 4通道原画存储
-        img_rgba = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-        out_rgba = io.BytesIO()
-        img_rgba.save(out_rgba, format="PNG", compress_level=0)
-        return out_rgba.getvalue()
-    except Exception as e:
-        logger.warning(f"[GitPing] 强化出图大小失败: {e}")
-        return png_bytes
-
-
 async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
     from playwright.async_api import async_playwright
 
@@ -285,7 +263,9 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
     if chromium_path is not None:
         launch_kwargs["executable_path"] = str(chromium_path)
 
-    logger.info(f"[GitPing] 🌐 正在调用无头浏览器渲染卡片 (清晰度: {scale}x, 内核: {chromium_path.name if chromium_path else 'default'})...")
+    logger.info(
+        f"[GitPing] 🌐 正在调用无头浏览器渲染卡片 (清晰度: {scale}x, 内核: {chromium_path.name if chromium_path else 'default'})..."
+    )
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(**launch_kwargs)
@@ -297,12 +277,18 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
             await page.set_content(html, wait_until="load", timeout=15000)
             await page.evaluate("document.fonts.ready")
             await page.wait_for_timeout(80)
-            png = await page.screenshot(full_page=True, type="png")
+
+            # 参考 karin-plugin-kkk: 对 .canvas 主卡片容器精确截图，避免 full_page 产生的外部空隙与比例失真
+            canvas_el = await page.query_selector(".canvas")
+            if canvas_el:
+                png = await canvas_el.screenshot(type="png")
+            else:
+                png = await page.screenshot(full_page=True, type="png")
         finally:
             await browser.close()
-    png = ensure_ultra_hd(png)
+
     size_mb = len(png) / 1024 / 1024
-    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成超清原画图片大小: {size_mb:.2f} MB ({len(png) / 1024:.1f} KB)")
+    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成超清卡片大小: {size_mb:.2f} MB ({len(png) / 1024:.1f} KB)")
     return png
 
 
@@ -315,13 +301,12 @@ async def _render_builtin(html: str, *, min_height: int, scale: float) -> bytes:
         html,
         max_width=float(CANVAS_WIDTH),
         dpi=dpi,
-        default_font_size=14.0,
+        default_font_size=16.0,
         font_name="sans-serif",
         allow_refit=True,
         image_format="png",
         lang="zh",
         root_max_width=float(CANVAS_WIDTH),
     )
-    png = ensure_ultra_hd(png)
     logger.debug(f"[GitPing] 内置渲染完成 {len(png) / 1024:.1f} KB")
     return png

@@ -111,7 +111,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 22px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--line);
   position: relative;
 }
@@ -121,19 +121,19 @@ body {
   position: absolute;
   left: 0;
   bottom: -1px;
-  width: 76px;
-  height: 2px;
+  width: 88px;
+  height: 3px;
   background: var(--brand);
 }
-.brand { display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 14px; }
 .brand-name {
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: .17em;
   text-transform: uppercase;
 }
 .brand-sub {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: .24em;
   text-transform: uppercase;
@@ -143,12 +143,13 @@ body {
 .crumb {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 10px 20px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--line);
-  font-size: 15px;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--ink-2);
   box-shadow: var(--sh-1);
 }
@@ -157,45 +158,47 @@ body {
 .repo-head {
   display: flex;
   align-items: flex-start;
-  gap: 22px;
-  padding: 28px 0 24px;
+  gap: 24px;
+  padding: 30px 0 26px;
 }
 /* 头部左侧品牌色竖条，把注意力引到仓库名 */
 .repo-head::before {
   content: "";
   position: absolute;
-  width: 3px;
+  width: 4px;
   height: 0;
 }
 .repo-title-wrap { flex: 1; min-width: 0; }
 .repo-owner {
-  font-size: 19px;
+  font-size: 22px;
+  font-weight: 600;
   color: var(--ink-3);
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   letter-spacing: .01em;
 }
 .repo-name {
   font-family: "MapleMono-Bold", "DouyinSans", sans-serif;
-  font-size: 44px;
+  font-size: 46px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.18;
   letter-spacing: -.01em;
   overflow-wrap: anywhere;
 }
-.repo-name.is-long { font-size: 34px; }
+.repo-name.is-long { font-size: 36px; }
 .repo-desc {
-  margin-top: 12px;
-  font-size: 19px;
+  margin-top: 14px;
+  font-size: 22px;
   line-height: 1.55;
   color: var(--ink-2);
 }
-.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .tag {
-  padding: 5px 13px;
+  padding: 6px 16px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--line);
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--ink-2);
 }
 .tag.is-accent {
@@ -207,11 +210,11 @@ body {
 /* ── 统计条 ─────────────────────────────────────────── */
 .stats {
   display: flex;
-  gap: 12px;
+  gap: 14px;
 }
 .stat {
   flex: 1;
-  padding: 16px 20px 18px;
+  padding: 18px 22px 20px;
   border-radius: var(--r-md);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -221,29 +224,29 @@ body {
 .stat .k {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--ink-4);
 }
 .stat .k::before {
   content: "";
-  width: 12px;
-  height: 3px;
+  width: 14px;
+  height: 4px;
   border-radius: 2px;
   background: var(--brand);
   opacity: .85;
 }
 .stat .v {
-  margin-top: 9px;
-  font-size: 31px;
+  margin-top: 10px;
+  font-size: 34px;
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -.01em;
 }
-.stat .v.is-sm { font-size: 20px; font-weight: 600; letter-spacing: 0; }
+.stat .v.is-sm { font-size: 22px; font-weight: 600; letter-spacing: 0; }
 
 /* ── 区块 ───────────────────────────────────────────── */
 .section { margin-top: 24px; }
@@ -257,19 +260,19 @@ body {
 .section-title {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 17px;
+  gap: 10px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: .02em;
 }
 .section-title::before {
   content: "";
-  width: 4px;
-  height: 17px;
-  border-radius: 2px;
+  width: 5px;
+  height: 20px;
+  border-radius: 3px;
   background: var(--brand);
 }
-.section-note { font-size: 14px; color: var(--ink-4); }
+.section-note { font-size: 17px; font-weight: 600; color: var(--ink-4); }
 
 .panel {
   border-radius: var(--r-lg);
@@ -283,14 +286,14 @@ body {
 .commit {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 18px 22px;
+  gap: 20px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--line-soft);
 }
 .commit:last-child { border-bottom: none; }
 .commit .avatar {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -298,8 +301,8 @@ body {
 }
 .commit .meta { flex: 1; min-width: 0; }
 .commit .msg {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   line-height: 1.4;
   overflow: hidden;
   white-space: nowrap;
@@ -308,33 +311,33 @@ body {
 .commit .sub {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
-  font-size: 18px;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 20px;
   color: var(--ink-3);
 }
 .commit .sub .author-name {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink-2);
 }
 .sha {
   flex: none;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 8px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 700;
   color: var(--ink-2);
 }
 /* 增删行数 + 比例条 */
-.diff { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; }
+.diff { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
 .diff .add { color: var(--ok); }
 .diff .del { color: var(--err); }
 .diffbar {
   display: flex;
-  width: 76px;
-  height: 5px;
+  width: 84px;
+  height: 6px;
   border-radius: 3px;
   overflow: hidden;
   background: var(--line);
@@ -346,19 +349,19 @@ body {
 .kv {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 18px;
+  gap: 12px;
+  padding: 14px 22px;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 16px;
+  font-size: 19px;
 }
 .kv:last-child { border-bottom: none; }
-.kv .k { color: var(--ink-4); min-width: 76px; }
+.kv .k { color: var(--ink-4); min-width: 88px; }
 .kv .v { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 
 .commit-body {
-  padding: 16px 18px;
-  font-size: 17px;
-  line-height: 1.65;
+  padding: 20px 24px;
+  font-size: 21px;
+  line-height: 1.7;
   color: var(--ink-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -368,17 +371,17 @@ body {
 .release-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px;
+  gap: 16px;
+  padding: 20px 22px;
   border-bottom: 1px solid var(--line-soft);
 }
 .release-tag {
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: var(--brand-soft);
   border: 1px solid var(--brand-line);
   color: var(--brand-ink);
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
 }
 .release-tag.is-pre {
@@ -386,32 +389,32 @@ body {
   border-color: rgba(199, 119, 0, .25);
   color: #a86400;
 }
-.release-name { flex: 1; font-size: 21px; font-weight: 600; }
+.release-name { flex: 1; font-size: 24px; font-weight: 700; }
 
-/* Markdown 正文的简化排版 */
-.md { padding: 16px 18px; font-size: 17px; line-height: 1.7; color: var(--ink-2); }
+/* Markdown 正文的排版 */
+.md { padding: 20px 24px; font-size: 21px; line-height: 1.75; color: var(--ink-2); }
 .md h1, .md h2, .md h3 {
-  font-size: 19px;
+  font-size: 25px;
   font-weight: 700;
   color: var(--ink);
-  margin: 14px 0 7px;
+  margin: 16px 0 8px;
 }
 .md h1:first-child, .md h2:first-child, .md h3:first-child { margin-top: 0; }
-.md p { margin: 7px 0; }
-.md ul { margin: 7px 0; padding-left: 20px; }
-.md li { margin: 4px 0; }
+.md p { margin: 9px 0; }
+.md ul { margin: 9px 0; padding-left: 24px; }
+.md li { margin: 6px 0; }
 .md code {
-  padding: 2px 6px;
-  border-radius: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 15px;
+  font-family: "MapleMono-Medium", ui-monospace, Menlo, monospace;
+  font-size: 19px;
 }
 .md a { color: var(--brand-ink); text-decoration: none; }
 .md pre {
-  margin: 10px 0;
-  padding: 12px 14px;
+  margin: 14px 0;
+  padding: 16px 18px;
   border-radius: var(--r-sm);
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -421,39 +424,40 @@ body {
   padding: 0;
   border: none;
   background: none;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 19px;
+  line-height: 1.65;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .md .quote {
-  padding-left: 12px;
-  border-left: 3px solid var(--brand-line);
+  padding-left: 14px;
+  border-left: 4px solid var(--brand-line);
   color: var(--ink-3);
 }
 .md .cut {
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px dashed var(--line);
-  font-size: 15px;
+  font-size: 18px;
   color: var(--ink-4);
 }
-.md hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
+.md hr { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
 
 /* 资产列表 */
-.assets { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 18px; }
+.assets { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 22px; }
 .asset {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 13px;
+  gap: 10px;
+  padding: 10px 16px;
   border-radius: var(--r-sm);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  font-size: 15px;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--ink-2);
 }
-.asset .sz { color: var(--ink-4); font-size: 13px; }
+.asset .sz { color: var(--ink-4); font-size: 16px; }
 
 /* ── 页脚 ───────────────────────────────────────────── */
 .footer {
@@ -461,10 +465,11 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-top: 26px;
-  padding-top: 18px;
+  margin-top: 28px;
+  padding-top: 20px;
   border-top: 1px solid var(--line);
-  font-size: 15px;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--ink-4);
 }
 .footer .mark { font-weight: 600; letter-spacing: .18em; text-transform: uppercase; }
@@ -482,9 +487,9 @@ body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   flex: none;
 }
-.avatar-36 { width: 36px; height: 36px; }
-.avatar-44 { width: 44px; height: 44px; }
-.avatar-52 { width: 52px; height: 52px; }
+.avatar-36 { width: 40px; height: 40px; }
+.avatar-44 { width: 56px; height: 56px; }
+.avatar-52 { width: 64px; height: 64px; }
 
 .avatar-group {
   display: flex;
@@ -492,7 +497,7 @@ body {
   position: relative;
 }
 .avatar-group .avatar + .avatar {
-  margin-left: -14px;
+  margin-left: -16px;
   position: relative;
   z-index: 2;
 }
@@ -502,12 +507,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 22px 26px;
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
   border: 1px solid rgba(167, 243, 208, 0.85);
   border-radius: var(--r-md);
   box-shadow: var(--sh-1);
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 .user-card.is-release {
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
@@ -520,15 +525,15 @@ body {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
 }
 .user-meta {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 .user-action {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: #1e293b;
 }
@@ -540,52 +545,52 @@ body {
   color: #1d4ed8;
 }
 .user-sub {
-  font-size: 18px;
+  font-size: 20px;
   color: #64748b;
 }
 .user-time-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 18px;
+  padding: 8px 20px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #475569;
 }
 
 /* 变更统计与卡片 */
 .commit-overview {
-  padding: 24px 26px;
+  padding: 26px 28px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   box-shadow: var(--sh-1);
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 .commit-title-text {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1.45;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .commit-stats-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  font-size: 18px;
+  gap: 14px;
+  font-size: 20px;
 }
 .stat-pill {
   display: inline-flex;
   align-items: center;
-  padding: 5px 14px;
+  padding: 6px 16px;
   border-radius: 8px;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 19px;
 }
 .stat-add {
   background: #dcfce7;
@@ -598,7 +603,7 @@ body {
 .stat-files {
   color: #475569;
   font-weight: 600;
-  font-size: 18px;
+  font-size: 20px;
 }
 .dot {
   color: #94a3b8;

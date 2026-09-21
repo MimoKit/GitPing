@@ -381,14 +381,14 @@ async def subscribe_command(bot: Bot, ev: Event) -> None:
         await bot.send(f"本群已经订阅过 {info.full_name} 了。")
         return
 
-    # 同步登记到 GsCore 订阅体系（用 extra_data 存仓库标识），
-    # 这样在 Web 控制台的订阅列表里也能看到，而不是只存在插件自己的文件里
+    # 规范登记到 GsCore 官方订阅体系（session 模式，每个仓库独立 task_name，支持 Web 控制台直观管理与原生 sub.send 路由）
     try:
         from gsuid_core.subscribe import gs_subscribe
 
+        task_name = f"[GitPing] {ref.platform}:{ref.owner}/{ref.repo}"
         await gs_subscribe.add_subscribe(
-            "single",
-            SUBSCRIBE_TASK,
+            "session",
+            task_name,
             ev,
             extra_message=f"{PLATFORM_LABELS[ref.platform]} {info.full_name}",
             extra_data=f"{ref.platform}:{ref.owner}/{ref.repo}",
@@ -421,17 +421,10 @@ async def unsubscribe_command(bot: Bot, ev: Event) -> None:
         try:
             from gsuid_core.subscribe import gs_subscribe
 
-            # 只删属于本仓库的那条：逐条比对 extra_data
-            subs = await gs_subscribe.get_subscribe(SUBSCRIBE_TASK)
-            if subs:
-                for sub in subs:
-                    if (
-                        getattr(sub, "group_id", None) == ev.group_id
-                        and getattr(sub, "bot_id", None) == ev.bot_id
-                        and getattr(sub, "extra_data", "") == f"{ref.platform}:{ref.owner}/{ref.repo}"
-                    ):
-                        await gs_subscribe.delete_subscribe("single", SUBSCRIBE_TASK, ev)
-                        break
+            task_name = f"[GitPing] {ref.platform}:{ref.owner}/{ref.repo}"
+            await gs_subscribe.delete_subscribe("session", task_name, ev)
+            # 兼容清理旧版 single 订阅
+            await gs_subscribe.delete_subscribe("single", SUBSCRIBE_TASK, ev)
         except Exception:
             logger.warning("[GitPing] 从 GsCore 取消订阅失败", exc_info=True)
 
