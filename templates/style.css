@@ -395,6 +395,35 @@ body {
   font-size: 15px;
 }
 .md a { color: var(--brand-ink); text-decoration: none; }
+.md pre {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+}
+.md pre code {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.md .quote {
+  padding-left: 12px;
+  border-left: 3px solid var(--brand-line);
+  color: var(--ink-3);
+}
+.md .cut {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 15px;
+  color: var(--ink-4);
+}
 .md hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
 
 /* 资产列表 */

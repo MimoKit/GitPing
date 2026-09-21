@@ -100,7 +100,7 @@ _NO_REPO_HINT = (
 # ── 仓库信息 ─────────────────────────────────────────────────────────────────
 
 
-@git_sv.on_command(("仓库", "repo", "仓库信息"), block=True, prefix=False)
+@git_sv.on_command(("仓库", "repo"), block=True)
 async def repo_command(bot: Bot, ev: Event) -> None:
     """git仓库 [平台:]owner/repo —— 查询仓库信息。"""
     args = ev.text.strip()
@@ -132,7 +132,7 @@ async def repo_command(bot: Bot, ev: Event) -> None:
 # ── 绑定 ─────────────────────────────────────────────────────────────────────
 
 
-@git_sv.on_command(("绑定", "bind"), block=True, prefix=False)
+@git_sv.on_command(("绑定", "bind"), block=True)
 async def bind_command(bot: Bot, ev: Event) -> None:
     """git绑定 [平台:]owner/repo —— 为当前群绑定默认仓库。"""
     if ev.group_id is None:
@@ -167,7 +167,7 @@ async def bind_command(bot: Bot, ev: Event) -> None:
     )
 
 
-@git_sv.on_command(("解绑", "unbind"), block=True, prefix=False)
+@git_sv.on_command(("解绑", "unbind"), block=True)
 async def unbind_command(bot: Bot, ev: Event) -> None:
     """git解绑 —— 解除当前群的仓库绑定。"""
     if ev.group_id is None:
@@ -180,7 +180,7 @@ async def unbind_command(bot: Bot, ev: Event) -> None:
     await bot.send("已解除本群仓库绑定。" if removed else "本群当前没有绑定仓库。")
 
 
-@git_sv.on_fullmatch(("当前仓库", "绑定信息", "git当前仓库"), block=True, prefix=False)
+@git_sv.on_fullmatch(("当前仓库", "绑定信息"), block=True)
 async def current_command(bot: Bot, ev: Event) -> None:
     ref = await _group_repo(ev)
     if ref is None:
@@ -192,7 +192,7 @@ async def current_command(bot: Bot, ev: Event) -> None:
 # ── 提交记录 ─────────────────────────────────────────────────────────────────
 
 
-@git_sv.on_command(("提交", "commits", "提交记录"), block=True, prefix=False)
+@git_sv.on_command(("提交", "commits", "提交记录"), block=True)
 async def commits_command(bot: Bot, ev: Event) -> None:
     """git提交 [数量] [平台:]owner/repo —— 查询提交记录。"""
     args, ref = await _split_args(ev)
@@ -230,7 +230,7 @@ async def commits_command(bot: Bot, ev: Event) -> None:
     await _send_image(bot, png)
 
 
-@git_sv.on_command(("提交详情", "commit"), block=True, prefix=False)
+@git_sv.on_command(("提交详情", "commit"), block=True)
 async def commit_command(bot: Bot, ev: Event) -> None:
     """git提交详情 <sha> [平台:]owner/repo —— 查询单条提交。"""
     args, ref = await _split_args(ev)
@@ -265,7 +265,7 @@ async def commit_command(bot: Bot, ev: Event) -> None:
 # ── 版本发布 ─────────────────────────────────────────────────────────────────
 
 
-@git_sv.on_command(("版本", "release", "发行版"), block=True, prefix=False)
+@git_sv.on_command(("版本", "release", "发行版"), block=True)
 async def release_command(bot: Bot, ev: Event) -> None:
     """git版本 [tag] [平台:]owner/repo —— 查询版本发布。"""
     args, ref = await _split_args(ev)
@@ -315,7 +315,7 @@ async def release_command(bot: Bot, ev: Event) -> None:
 _MAX_SUBSCRIPTIONS_PER_GROUP = 5
 
 
-@push_sv.on_command(("订阅", "subscribe"), block=True, prefix=False)
+@push_sv.on_command(("订阅", "subscribe"), block=True)
 async def subscribe_command(bot: Bot, ev: Event) -> None:
     """git订阅 [平台:]owner/repo —— 订阅仓库更新推送。"""
     if ev.group_id is None:
@@ -392,7 +392,7 @@ async def subscribe_command(bot: Bot, ev: Event) -> None:
     await bot.send(f"已订阅 {PLATFORM_LABELS[ref.platform]} 仓库 {info.full_name} 的更新推送。")
 
 
-@push_sv.on_command(("取消订阅", "退订", "unsubscribe"), block=True, prefix=False)
+@push_sv.on_command(("取消订阅", "退订", "unsubscribe"), block=True)
 async def unsubscribe_command(bot: Bot, ev: Event) -> None:
     """git取消订阅 [平台:]owner/repo —— 取消推送订阅。"""
     if ev.group_id is None:
@@ -431,7 +431,7 @@ async def unsubscribe_command(bot: Bot, ev: Event) -> None:
     await bot.send("已取消订阅。" if removed else "本群没有订阅这个仓库。")
 
 
-@push_sv.on_fullmatch(("订阅列表", "git订阅列表"), block=True, prefix=False)
+@push_sv.on_fullmatch(("订阅列表",), block=True)
 async def list_subscriptions_command(bot: Bot, ev: Event) -> None:
     subs = await store.list_subscriptions()
     mine = [s for s in subs if s.bot_id == ev.bot_id and s.group_id == ev.group_id]
@@ -447,7 +447,7 @@ async def list_subscriptions_command(bot: Bot, ev: Event) -> None:
 # ── 帮助 ─────────────────────────────────────────────────────────────────────
 
 
-@git_sv.on_fullmatch(("git帮助", "GitPing帮助", "git菜单"), block=True, prefix=False)
+@git_sv.on_fullmatch(("帮助", "菜单", "help"), block=True)
 async def help_command(bot: Bot, ev: Event) -> None:
     platforms = " / ".join(PLATFORM_LABELS[p] for p in PLATFORM_ORDER)
     await bot.send(

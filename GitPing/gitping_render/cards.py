@@ -82,27 +82,68 @@ def _size(value: int) -> str:
 def _markdown(raw: str, limit: int) -> str:
     """把 release / commit 正文里的 Markdown 转成安全 HTML。
 
-    只保留标题、列表、代码、链接这几类，够表达发布说明即可。
+    支持标题、列表、围栏代码块、行内代码、链接与分隔线，够表达发布说明。
     先转义再套标签，避免正文里的尖括号破坏结构。
+
+    代码块必须单独处理：否则 ``` 围栏会被当成普通段落显示出来。
     """
     if not raw.strip():
         return ""
-    body = raw.strip()[:limit]
-    lines = body.splitlines()
+
+    # 先按围栏切片，再逐段处理，这样代码块内部的标记不会被误解析
+    body = raw.strip()
+    truncated = len(body) > limit
+    if truncated:
+        body = body[:limit]
+
     out: list[str] = []
     in_list = False
+    in_code = False
+    code_lang = ""
+    code_lines: list[str] = []
 
-    for line in lines:
+    def flush_code() -> None:
+        nonlocal in_code, code_lines
+        if not in_code:
+            return
+        # 代码块内容整体转义，保留原始缩进
+        content = escape("\n".join(code_lines).strip("\n"))
+        if content:
+            cls = f' class="lang-{escape(code_lang)}"' if code_lang else ""
+            out.append(f"<pre><code{cls}>{content}</code></pre>")
+        code_lines = []
+        in_code = False
+
+    def close_list() -> None:
+        nonlocal in_list
+        if in_list:
+            out.append("</ul>")
+            in_list = False
+
+    for line in body.splitlines():
         stripped = line.strip()
+
+        # 围栏：``` 或 ~~~，可带语言标记
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            if in_code:
+                flush_code()
+            else:
+                close_list()
+                in_code = True
+                code_lang = stripped.strip("`~").strip()
+            continue
+
+        if in_code:
+            code_lines.append(line)
+            continue
+
         if stripped.startswith(("- ", "* ", "+ ")):
             if not in_list:
                 out.append("<ul>")
                 in_list = True
             out.append(f"<li>{_inline(stripped[2:])}</li>")
             continue
-        if in_list:
-            out.append("</ul>")
-            in_list = False
+        close_list()
 
         if not stripped:
             continue
@@ -114,11 +155,16 @@ def _markdown(raw: str, limit: int) -> str:
             out.append(f"<h1>{_inline(stripped.lstrip('#').strip())}</h1>")
         elif stripped in ("---", "***", "___"):
             out.append("<hr>")
+        elif stripped.startswith(">"):
+            out.append(f"<p class=\"quote\">{_inline(stripped.lstrip('> ').strip())}</p>")
         else:
             out.append(f"<p>{_inline(stripped)}</p>")
 
-    if in_list:
-        out.append("</ul>")
+    flush_code()
+    close_list()
+
+    if truncated:
+        out.append('<p class="cut">说明过长，此处仅显示开头部分</p>')
     return "".join(out)
 
 
