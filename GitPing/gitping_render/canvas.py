@@ -196,7 +196,8 @@ def request_timeout() -> float:
 
 
 def scale_for_quality() -> float:
-    return 2.0 if config_text("render_quality", "default") == "high" else 1.0
+    quality = config_text("render_quality", "high").strip().lower()
+    return 2.0 if quality in ("high", "2x") else 1.5
 
 
 async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes:
@@ -223,6 +224,8 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
     if chromium_path is not None:
         launch_kwargs["executable_path"] = str(chromium_path)
 
+    logger.info(f"[GitPing] 🌐 正在调用无头浏览器渲染卡片 (清晰度: {scale}x, 内核: {chromium_path.name if chromium_path else 'default'})...")
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(**launch_kwargs)
         try:
@@ -246,7 +249,7 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
             png = await page.screenshot(full_page=True, type="png")
         finally:
             await browser.close()
-    logger.debug(f"[GitPing] 浏览器渲染完成 {len(png) / 1024:.1f} KB")
+    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成图片大小: {len(png) / 1024:.1f} KB")
     return png
 
 
