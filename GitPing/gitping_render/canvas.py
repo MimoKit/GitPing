@@ -272,19 +272,9 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
                 viewport={"width": CANVAS_WIDTH, "height": min_height},
                 device_scale_factor=scale,
             )
-            await page.set_content(html, wait_until="load")
-            font_path = core_font_path()
-            if font_path is not None:
-                font_b64 = base64.b64encode(font_path.read_bytes()).decode("ascii")
-                await page.add_style_tag(
-                    content=(
-                        "@font-face{font-family:'MiSans';"
-                        f"src:url(data:font/ttf;base64,{font_b64}) format('truetype');"
-                        "font-display:block;}"
-                    )
-                )
-                await page.evaluate("document.fonts.ready")
-            await page.wait_for_timeout(120)
+            await page.set_content(html, wait_until="load", timeout=15000)
+            await page.evaluate("document.fonts.ready")
+            await page.wait_for_timeout(80)
             png = await page.screenshot(full_page=True, type="png")
         finally:
             await browser.close()
