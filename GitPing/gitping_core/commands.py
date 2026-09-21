@@ -466,9 +466,30 @@ async def help_command(bot: Bot, ev: Event) -> None:
         "· git版本 [tag] [仓库] — 查看版本发布\n"
         "· git绑定 [平台:]owner/repo — 为本群绑定默认仓库\n"
         "· git解绑 — 解除绑定\n"
-        "· git订阅 / git取消订阅 / git订阅列表 — 管理更新推送\n\n"
+        "· git订阅 / git取消订阅 / git订阅列表 — 管理更新推送\n"
+        "· git测试推送 — 立即为本群检查并发送最新动态\n\n"
         "仓库可写 owner/repo、完整 URL，或加平台前缀（如 gitee:owner/repo）。"
     )
+
+
+@push_sv.on_command(("测试推送", "检查更新", "检查订阅", "推送测试"), block=True)
+async def test_push_command(bot: Bot, ev: Event) -> None:
+    """git测试推送 —— 手动为本群立即检查订阅并推送最新动态。"""
+    if ev.group_id is None:
+        await bot.send("推送订阅只对群聊生效。")
+        return
+    if not _is_admin(ev):
+        await bot.send("仅主人或超级用户可以触发推送测试。")
+        return
+
+    from .scheduler import check_subscriptions
+
+    await bot.send("正在为本群检查订阅并获取最新动态...")
+    count = await check_subscriptions(force_push=True, target_group=ev.group_id)
+    if count == 0:
+        await bot.send("当前群暂未订阅任何仓库，请先使用「git订阅 owner/repo」订阅。")
+    else:
+        await bot.send(f"推送检查完成！已成功推送 {count} 条动态。")
 
 
 # ── 参数解析 ─────────────────────────────────────────────────────────────────

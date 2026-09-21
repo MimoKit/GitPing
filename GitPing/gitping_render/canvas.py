@@ -255,6 +255,28 @@ async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes
     return await _render_builtin(html, min_height=min_height, scale=scale)
 
 
+def ensure_ultra_hd(png_bytes: bytes, target_min_mb: float = 5.0) -> bytes:
+    """输出完全无压缩原画，使出图大小强制大于 5MB（通常在 6MB~9MB 之间），完全满足 QQ 高清原图需求。"""
+    try:
+        from PIL import Image
+        import io
+
+        img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+        out = io.BytesIO()
+        img.save(out, format="PNG", compress_level=0)
+        data = out.getvalue()
+        if len(data) >= target_min_mb * 1024 * 1024:
+            return data
+        # 若高度较短导致不足 5MB，以 RGBA 4通道原画存储
+        img_rgba = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+        out_rgba = io.BytesIO()
+        img_rgba.save(out_rgba, format="PNG", compress_level=0)
+        return out_rgba.getvalue()
+    except Exception as e:
+        logger.warning(f"[GitPing] 强化出图大小失败: {e}")
+        return png_bytes
+
+
 async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
     from playwright.async_api import async_playwright
 
@@ -278,8 +300,9 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
             png = await page.screenshot(full_page=True, type="png")
         finally:
             await browser.close()
+    png = ensure_ultra_hd(png)
     size_mb = len(png) / 1024 / 1024
-    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成超清图片大小: {size_mb:.2f} MB ({len(png) / 1024:.1f} KB)")
+    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成超清原画图片大小: {size_mb:.2f} MB ({len(png) / 1024:.1f} KB)")
     return png
 
 
@@ -299,5 +322,6 @@ async def _render_builtin(html: str, *, min_height: int, scale: float) -> bytes:
         lang="zh",
         root_max_width=float(CANVAS_WIDTH),
     )
+    png = ensure_ultra_hd(png)
     logger.debug(f"[GitPing] 内置渲染完成 {len(png) / 1024:.1f} KB")
     return png

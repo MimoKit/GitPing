@@ -64,12 +64,12 @@ CONFIG_DEFAULT: Dict[str, GSC] = {
     "push_enabled": GsBoolConfig(
         title="启用推送订阅",
         desc="开启后可按仓库订阅新提交与新版本发布",
-        data=False,
+        data=True,
     ),
     "push_interval": GsIntConfig(
         title="推送轮询间隔（分钟）",
         desc="定时检查各订阅仓库是否有更新",
-        data=10,
+        data=2,
         max_value=120,
     ),
 }

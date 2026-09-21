@@ -283,22 +283,22 @@ body {
 .commit {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 18px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--line-soft);
 }
 .commit:last-child { border-bottom: none; }
 .commit .avatar {
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 2px solid #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   flex: none;
 }
 .commit .meta { flex: 1; min-width: 0; }
 .commit .msg {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
   line-height: 1.4;
   overflow: hidden;
@@ -308,9 +308,9 @@ body {
 .commit .sub {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 6px;
-  font-size: 15px;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 18px;
   color: var(--ink-3);
 }
 .commit .sub .author-name {
@@ -319,15 +319,16 @@ body {
 }
 .sha {
   flex: none;
-  padding: 4px 10px;
-  border-radius: 7px;
+  padding: 5px 12px;
+  border-radius: 8px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  font-size: 14px;
+  font-size: 17px;
+  font-weight: 600;
   color: var(--ink-2);
 }
 /* 增删行数 + 比例条 */
-.diff { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.diff { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; }
 .diff .add { color: var(--ok); }
 .diff .del { color: var(--err); }
 .diffbar {
@@ -501,12 +502,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 20px 24px;
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
   border: 1px solid rgba(167, 243, 208, 0.85);
   border-radius: var(--r-md);
   box-shadow: var(--sh-1);
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 .user-card.is-release {
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
@@ -519,16 +520,16 @@ body {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 }
 .user-meta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
 }
 .user-action {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: #1e293b;
 }
 .user-highlight {
@@ -539,52 +540,52 @@ body {
   color: #1d4ed8;
 }
 .user-sub {
-  font-size: 14px;
+  font-size: 18px;
   color: #64748b;
 }
 .user-time-badge {
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
+  padding: 8px 18px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   color: #475569;
 }
 
 /* 变更统计与卡片 */
 .commit-overview {
-  padding: 20px 22px;
+  padding: 24px 26px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   box-shadow: var(--sh-1);
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 .commit-title-text {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1.45;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .commit-stats-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  font-size: 15px;
+  gap: 12px;
+  font-size: 18px;
 }
 .stat-pill {
   display: inline-flex;
   align-items: center;
-  padding: 4px 11px;
-  border-radius: 7px;
+  padding: 5px 14px;
+  border-radius: 8px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 17px;
 }
 .stat-add {
   background: #dcfce7;
@@ -597,6 +598,7 @@ body {
 .stat-files {
   color: #475569;
   font-weight: 600;
+  font-size: 18px;
 }
 .dot {
   color: #94a3b8;
