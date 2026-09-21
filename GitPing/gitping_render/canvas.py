@@ -274,9 +274,9 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
                 viewport={"width": CANVAS_WIDTH, "height": min_height},
                 device_scale_factor=scale,
             )
-            await page.set_content(html, wait_until="load", timeout=15000)
+            await page.set_content(html, wait_until="domcontentloaded", timeout=10000)
             await page.evaluate("document.fonts.ready")
-            await page.wait_for_timeout(80)
+            await page.wait_for_timeout(100)
 
             # 参考 karin-plugin-kkk: 对 .canvas 主卡片容器精确截图，避免 full_page 产生的外部空隙与比例失真
             canvas_el = await page.query_selector(".canvas")
