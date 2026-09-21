@@ -51,12 +51,12 @@ body {
   width: 1080px;
   background: var(--bg);
   color: var(--ink);
-  font-family: "HarmonyOS Sans SC", "LXGW WenKai", "MiSans", "Noto Sans CJK SC", sans-serif;
+  font-family: "DouyinSans", "HarmonyOS Sans SC", "LXGW WenKai", "MiSans", "Noto Sans CJK SC", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 .mono {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: "MapleMono-Medium", "MapleMono-Bold", ui-monospace, "SF Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: .02em;
 }
@@ -175,6 +175,7 @@ body {
   letter-spacing: .01em;
 }
 .repo-name {
+  font-family: "MapleMono-Bold", "DouyinSans", sans-serif;
   font-size: 44px;
   font-weight: 700;
   line-height: 1.15;
@@ -281,12 +282,20 @@ body {
 /* ── 提交行 ─────────────────────────────────────────── */
 .commit {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px 18px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--line-soft);
 }
 .commit:last-child { border-bottom: none; }
+.commit .avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  flex: none;
+}
 .commit .meta { flex: 1; min-width: 0; }
 .commit .msg {
   font-size: 20px;
@@ -299,10 +308,14 @@ body {
 .commit .sub {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-top: 7px;
+  gap: 10px;
+  margin-top: 6px;
   font-size: 15px;
   color: var(--ink-3);
+}
+.commit .sub .author-name {
+  font-weight: 600;
+  color: var(--ink-2);
 }
 .sha {
   flex: none;
@@ -457,3 +470,134 @@ body {
 
 /* 空态 */
 .empty { padding: 26px 18px; text-align: center; font-size: 17px; color: var(--ink-4); }
+
+/* ── 头像系统与卡片（参考 karin-plugin-git） ──────────── */
+.avatar {
+  display: inline-block;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--surface-2);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex: none;
+}
+.avatar-36 { width: 36px; height: 36px; }
+.avatar-44 { width: 44px; height: 44px; }
+.avatar-52 { width: 52px; height: 52px; }
+
+.avatar-group {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.avatar-group .avatar + .avatar {
+  margin-left: -14px;
+  position: relative;
+  z-index: 2;
+}
+
+/* 提交者卡片（柔和渐变、高辨识度） */
+.user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid rgba(167, 243, 208, 0.85);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+  margin-bottom: 18px;
+}
+.user-card.is-release {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: rgba(191, 219, 254, 0.85);
+}
+.user-card.is-repo {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: rgba(226, 232, 240, 0.9);
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.user-action {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.user-highlight {
+  color: #047857;
+  font-weight: 700;
+}
+.user-card.is-release .user-highlight {
+  color: #1d4ed8;
+}
+.user-sub {
+  font-size: 14px;
+  color: #64748b;
+}
+.user-time-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* 变更统计与卡片 */
+.commit-overview {
+  padding: 20px 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+  margin-bottom: 18px;
+}
+.commit-title-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+.commit-stats-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 15px;
+}
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.stat-add {
+  background: #dcfce7;
+  color: #15803d;
+}
+.stat-del {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.stat-files {
+  color: #475569;
+  font-weight: 600;
+}
+.dot {
+  color: #94a3b8;
+}

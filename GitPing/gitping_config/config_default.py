@@ -55,12 +55,6 @@ CONFIG_DEFAULT: Dict[str, GSC] = {
         data="auto",
         options=["auto", "browser", "builtin"],
     ),
-    "render_quality": GsStrConfig(
-        title="卡片渲染清晰度",
-        desc="default=1 倍图；high=2 倍图，手机端更清晰",
-        data="default",
-        options=["default", "high"],
-    ),
     "commit_limit": GsIntConfig(
         title="提交记录条数",
         desc="查询提交记录时默认展示的条数",

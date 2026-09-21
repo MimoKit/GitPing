@@ -12,6 +12,8 @@ ReleaseInfo 三个结构，上层命令与渲染只依赖这三个结构。
 
 from __future__ import annotations
 
+import base64
+from html import escape
 import re
 from dataclasses import dataclass, field
 from typing import Literal
@@ -90,16 +92,54 @@ class RepoInfo:
         return _repo_url(self.platform, self.owner, self.repo)
 
 
+def fallback_avatar(name: str) -> str:
+    """生成精致优雅的首字母彩色圆形头像 SVG data URI（离线秒开且不依赖外网）。"""
+    char = (name.strip()[:1] if name.strip() else "?").upper()
+    palette = [
+        ("#3b82f6", "#1d4ed8"),  # 蓝
+        ("#10b981", "#047857"),  # 翠绿
+        ("#8b5cf6", "#6d28d9"),  # 紫
+        ("#f59e0b", "#b45309"),  # 琥珀
+        ("#ec4899", "#be185d"),  # 玫红
+        ("#06b6d4", "#0e7490"),  # 青蓝
+        ("#f97316", "#c2410c"),  # 橙红
+    ]
+    idx = sum(ord(c) for c in (name or "?")) % len(palette)
+    c1, c2 = palette[idx]
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">'
+        f'<defs><linearGradient id="g_{idx}" x1="0" y1="0" x2="1" y2="1">'
+        f'<stop offset="0%" stop-color="{c1}"/>'
+        f'<stop offset="100%" stop-color="{c2}"/>'
+        f'</linearGradient></defs>'
+        f'<circle cx="32" cy="32" r="32" fill="url(#g_{idx})"/>'
+        f'<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" '
+        f'fill="#ffffff" font-family="DouyinSans, sans-serif" font-weight="700" font-size="28">{escape(char)}</text>'
+        f'</svg>'
+    )
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
 @dataclass(frozen=True, slots=True)
 class CommitInfo:
     sha: str
     message: str
     author: str
+    author_avatar: str = ""
     author_email: str = ""
+    committer: str = ""
+    committer_avatar: str = ""
     date: str = ""
     additions: int = 0
     deletions: int = 0
     files_changed: int = 0
+
+    @property
+    def is_same_author(self) -> bool:
+        """作者与提交者是否相同。"""
+        if not self.committer:
+            return True
+        return self.author.strip().lower() == self.committer.strip().lower()
 
     @property
     def short_sha(self) -> str:
@@ -133,6 +173,7 @@ class ReleaseInfo:
     name: str = ""
     body: str = ""
     author: str = ""
+    author_avatar: str = ""
     created_at: str = ""
     prerelease: bool = False
     target: str = ""
@@ -305,24 +346,54 @@ class GitClient:
         for raw in data[:limit]:
             if not isinstance(raw, dict):
                 continue
-            # GitHub/GitCode 用 commit.author，Gitee 用 commit.author.name 且顶层有 author
             inner = raw.get("commit")
             inner = inner if isinstance(inner, dict) else {}
-            author_obj = inner.get("author") if isinstance(inner.get("author"), dict) else {}
-            if not author_obj:
-                author_obj = raw.get("author") if isinstance(raw.get("author"), dict) else {}
-            committer_obj = inner.get("committer") if isinstance(inner.get("committer"), dict) else {}
+            top_author = raw.get("author") if isinstance(raw.get("author"), dict) else {}
+            top_user = raw.get("user") if isinstance(raw.get("user"), dict) else {}
+            git_author = inner.get("author") if isinstance(inner.get("author"), dict) else {}
+            top_committer = raw.get("committer") if isinstance(raw.get("committer"), dict) else {}
+            git_committer = inner.get("committer") if isinstance(inner.get("committer"), dict) else {}
+
+            author_name = (
+                _text(_first(top_author, "login", "name", "username"))
+                or _text(_first(git_author, "name", "login"))
+                or _text(raw.get("author_name"))
+                or "未知"
+            )
+            committer_name = (
+                _text(_first(top_committer, "login", "name", "username"))
+                or _text(_first(git_committer, "name", "login"))
+                or author_name
+            )
+
+            author_avatar = (
+                _text(_first(top_author, "avatar_url", "avatar", "avatar_path"))
+                or _text(_first(top_user, "avatar_url", "avatar"))
+                or _text(_first(git_author, "avatar_url", "avatar"))
+            )
+            if not author_avatar:
+                author_avatar = fallback_avatar(author_name)
+
+            committer_avatar = (
+                _text(_first(top_committer, "avatar_url", "avatar", "avatar_path"))
+                or _text(_first(git_committer, "avatar_url", "avatar"))
+            )
+            if not committer_avatar:
+                committer_avatar = fallback_avatar(committer_name) if committer_name != author_name else author_avatar
 
             message = _text(_first(inner, "message", "title")) or _text(raw.get("title"))
-            date = _text(_first(author_obj, "date")) or _text(_first(committer_obj, "date")) or _text(
+            date = _text(_first(git_author, "date")) or _text(_first(git_committer, "date")) or _text(
                 raw.get("created_at")
             )
             result.append(
                 CommitInfo(
                     sha=_text(_first(raw, "sha", "id", "hash")),
                     message=message or "(无提交信息)",
-                    author=_text(_first(author_obj, "name", "login")) or _text(raw.get("author_name")) or "未知",
-                    author_email=_text(author_obj.get("email")),
+                    author=author_name,
+                    author_avatar=author_avatar,
+                    author_email=_text(git_author.get("email")),
+                    committer=committer_name,
+                    committer_avatar=committer_avatar,
                     date=date,
                     additions=_int(raw.get("additions") or (raw.get("stats") or {}).get("additions") if isinstance(raw.get("stats"), dict) else 0),
                     deletions=_int(raw.get("deletions") or (raw.get("stats") or {}).get("deletions") if isinstance(raw.get("stats"), dict) else 0),
@@ -341,14 +412,48 @@ class GitClient:
             return None
 
         inner = data.get("commit") if isinstance(data.get("commit"), dict) else {}
-        author_obj = inner.get("author") if isinstance(inner.get("author"), dict) else {}
+        top_author = data.get("author") if isinstance(data.get("author"), dict) else {}
+        top_user = data.get("user") if isinstance(data.get("user"), dict) else {}
+        git_author = inner.get("author") if isinstance(inner.get("author"), dict) else {}
+        top_committer = data.get("committer") if isinstance(data.get("committer"), dict) else {}
+        git_committer = inner.get("committer") if isinstance(inner.get("committer"), dict) else {}
+
+        author_name = (
+            _text(_first(top_author, "login", "name", "username"))
+            or _text(_first(git_author, "name", "login"))
+            or "未知"
+        )
+        committer_name = (
+            _text(_first(top_committer, "login", "name", "username"))
+            or _text(_first(git_committer, "name", "login"))
+            or author_name
+        )
+
+        author_avatar = (
+            _text(_first(top_author, "avatar_url", "avatar", "avatar_path"))
+            or _text(_first(top_user, "avatar_url", "avatar"))
+            or _text(_first(git_author, "avatar_url", "avatar"))
+        )
+        if not author_avatar:
+            author_avatar = fallback_avatar(author_name)
+
+        committer_avatar = (
+            _text(_first(top_committer, "avatar_url", "avatar", "avatar_path"))
+            or _text(_first(git_committer, "avatar_url", "avatar"))
+        )
+        if not committer_avatar:
+            committer_avatar = fallback_avatar(committer_name) if committer_name != author_name else author_avatar
+
         stats = data.get("stats") if isinstance(data.get("stats"), dict) else {}
         return CommitInfo(
             sha=_text(_first(data, "sha", "id", "hash")),
             message=_text(inner.get("message")) or "(无提交信息)",
-            author=_text(_first(author_obj, "name", "login")) or "未知",
-            author_email=_text(author_obj.get("email")),
-            date=_text(author_obj.get("date")),
+            author=author_name,
+            author_avatar=author_avatar,
+            author_email=_text(git_author.get("email")),
+            committer=committer_name,
+            committer_avatar=committer_avatar,
+            date=_text(git_author.get("date")),
             additions=_int(stats.get("additions")),
             deletions=_int(stats.get("deletions")),
             files_changed=_int(_first(stats, "total")) or len(data.get("files") or []),
@@ -396,6 +501,11 @@ class GitClient:
         if not tag:
             return None
         author_obj = raw.get("author") if isinstance(raw.get("author"), dict) else {}
+        author_name = _text(_first(author_obj, "login", "name")) or _text(raw.get("author_name")) or "未知"
+        author_avatar = _text(_first(author_obj, "avatar_url", "avatar", "avatar_path"))
+        if not author_avatar:
+            author_avatar = fallback_avatar(author_name)
+
         assets_raw = raw.get("assets") if isinstance(raw.get("assets"), list) else []
         assets = tuple(
             ReleaseAsset(
@@ -413,7 +523,8 @@ class GitClient:
             tag=tag,
             name=_text(raw.get("name")) or tag,
             body=_text(_first(raw, "body", "description", "note")) or "",
-            author=_text(_first(author_obj, "login", "name")) or _text(raw.get("author_name")),
+            author=author_name,
+            author_avatar=author_avatar,
             created_at=_text(_first(raw, "created_at", "published_at", "createdAt")),
             prerelease=bool(raw.get("prerelease") or raw.get("is_prerelease")),
             target=_text(_first(raw, "target_commitish", "target")),

@@ -27,11 +27,51 @@ ResolvedBackend = Literal["browser", "builtin", "none"]
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_DIR = PLUGIN_ROOT / "templates"
-# 字体策略：不随插件打包字体（霞鹜文楷约 25MB，会让仓库膨胀）。
-# 浏览器后端直接注入 GsCore 自带的 MiSans 可变字体，内置后端由 pytakumi 自行注册，
-# 两条路径因此拿到同一个字体文件，出图观感一致。
-# 用户若系统装了 HarmonyOS Sans SC（kkk 用的那套）或霞鹜文楷，字体栈会自动优先使用。
-FONT_STACK = '"HarmonyOS Sans SC", "LXGW WenKai", "MiSans", "Noto Sans CJK SC", sans-serif'
+FONTS_DIR = PLUGIN_ROOT / "resources" / "fonts"
+
+# 参考 karin-plugin-git：
+# 优先使用 DouyinSans 作为正文字体，MapleMono 作为等宽与加粗代码字体
+FONT_STACK = '"DouyinSans", "HarmonyOS Sans SC", "MiSans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+FONT_MONO_STACK = '"MapleMono-Medium", "MapleMono-Bold", ui-monospace, "SF Mono", Menlo, Consolas, monospace'
+
+_FONTS_CSS_CACHE: str | None = None
+
+
+def get_font_css() -> str:
+    """获取内嵌字体 @font-face 样式（带内存缓存）。
+
+    把 DouyinSans 与 MapleMono 编码为 base64 data URI，实现零外网依赖的离线秒级渲染。
+    """
+    global _FONTS_CSS_CACHE
+    if _FONTS_CSS_CACHE is not None:
+        return _FONTS_CSS_CACHE
+
+    css_parts: list[str] = []
+    font_configs = [
+        ("DouyinSans", "DouyinSans.woff2", 700),
+        ("MapleMono-Medium", "MapleMono-Medium.woff2", 500),
+        ("MapleMono-Bold", "MapleMono-Bold.woff2", 700),
+    ]
+
+    for family, filename, weight in font_configs:
+        font_file = FONTS_DIR / filename
+        if font_file.is_file():
+            try:
+                b64 = base64.b64encode(font_file.read_bytes()).decode("ascii")
+                css_parts.append(
+                    f"@font-face {{\n"
+                    f"  font-family: '{family}';\n"
+                    f"  src: url('data:font/woff2;base64,{b64}') format('woff2');\n"
+                    f"  font-weight: {weight};\n"
+                    f"  font-style: normal;\n"
+                    f"  font-display: swap;\n"
+                    f"}}"
+                )
+            except Exception as e:
+                logger.warning(f"[GitPing] 加载本地字体 {filename} 失败: {e}")
+
+    _FONTS_CSS_CACHE = "\n".join(css_parts)
+    return _FONTS_CSS_CACHE
 
 
 def core_font_path() -> Path | None:
@@ -195,15 +235,14 @@ def request_timeout() -> float:
     return float(config_int("request_timeout", 15))
 
 
-def scale_for_quality() -> float:
-    quality = config_text("render_quality", "high").strip().lower()
-    return 2.0 if quality in ("high", "2x") else 1.5
+# 采用超高清 3.0x 渲染比例（1080px -> 3240px 视网膜极清，出图 5MB~8MB，发丝级细节）
+DEFAULT_SCALE = 3.0
 
 
 async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes:
     """按配置选择后端渲染 HTML，返回 PNG 字节。"""
     backend = resolve_backend()
-    scale = scale or scale_for_quality()
+    scale = scale or DEFAULT_SCALE
     if backend == "browser":
         try:
             return await _render_browser(html, min_height=min_height, scale=scale)
@@ -249,7 +288,8 @@ async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
             png = await page.screenshot(full_page=True, type="png")
         finally:
             await browser.close()
-    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成图片大小: {len(png) / 1024:.1f} KB")
+    size_mb = len(png) / 1024 / 1024
+    logger.info(f"[GitPing] ✨ 无头浏览器渲染完成，生成超清图片大小: {size_mb:.2f} MB ({len(png) / 1024:.1f} KB)")
     return png
 
 

@@ -23,7 +23,7 @@ from ..gitping_core.platforms import (
     RepoInfo,
 )
 from . import icons
-from .canvas import FONT_STACK, load_template, render
+from .canvas import FONT_STACK, get_font_css, load_template, render
 
 _MAX_DESC = 160
 _MAX_COMMIT_BODY = 1400
@@ -190,6 +190,7 @@ def _shell(*, platform: Platform, crumb: str, body: str, footer_left: str) -> st
     """套上外壳模板，并按平台注入品牌色变量。"""
     html = load_template("card.html")
     for token, value in (
+        ("{{FONTS_CSS}}", get_font_css()),
         ("{{STYLE}}", load_template("style.css")),
         ("{{BRAND_VARS}}", icons.brand_vars(platform)),
         ("{{BRAND_ICON}}", icons.brand_mark()),
@@ -279,15 +280,18 @@ def _commit_row(item: CommitInfo) -> str:
             f'<span class="d" style="width:{del_pct}%"></span>'
             "</span>"
         )
+    avatar_html = f'<img class="avatar avatar-36" src="{item.author_avatar}" alt="{_text(item.author)}" />' if item.author_avatar else ""
     return (
         '<article class="commit">'
-        f'<span class="sha mono">{_text(item.short_sha)}</span>'
+        f"{avatar_html}"
         '<div class="meta">'
         f'<div class="msg">{_text(item.title)}</div>'
         '<div class="sub">'
-        f"<span>{_text(item.author)}</span>"
+        f'<span class="author-name">{_text(item.author)}</span>'
         '<span class="mono">·</span>'
         f'<span class="mono">{_datetime(item.date)}</span>'
+        '<span class="mono">·</span>'
+        f'<span class="sha mono">{_text(item.short_sha)}</span>'
         f"{diff}"
         "</div></div></article>"
     )
@@ -349,22 +353,52 @@ def build_commit(
     note: str = "",
 ) -> str:
     slug = f"{owner}/{repo}"
-    rows = [
-        ("提交", item.sha),
-        ("作者", item.author),
-        ("时间", _datetime(item.date)),
-    ]
-    if item.author_email:
-        rows.append(("邮箱", item.author_email))
-    if item.files_changed:
-        rows.append(("文件", f"{item.files_changed} 个变更"))
-    if item.additions or item.deletions:
-        rows.append(("增删", f"+{item.additions} / -{item.deletions}"))
 
-    kv_html = "".join(
-        f'<div class="kv"><span class="k">{k}</span>'
-        f'<span class="v mono">{_text(v)}</span></div>'
-        for k, v in rows
+    # 1. 提交者信息卡片（参考 karin-plugin-git User 组件）
+    if item.is_same_author:
+        user_action = f'由 <span class="user-highlight">{_text(item.author)}</span> 提交'
+        avatar_content = f'<img class="avatar avatar-44" src="{item.author_avatar}" alt="{_text(item.author)}" />'
+    else:
+        user_action = (
+            f'由 <span class="user-highlight">{_text(item.author)}</span> 编写，'
+            f'并由 <span class="user-highlight">{_text(item.committer)}</span> 提交'
+        )
+        avatar_content = (
+            '<div class="avatar-group">'
+            f'<img class="avatar avatar-44" src="{item.author_avatar}" alt="{_text(item.author)}" />'
+            f'<img class="avatar avatar-44" src="{item.committer_avatar}" alt="{_text(item.committer)}" />'
+            '</div>'
+        )
+
+    sub_email = f'<div class="user-sub mono">{_text(item.author_email)}</div>' if item.author_email else ""
+    user_card_html = (
+        '<div class="user-card">'
+        '<div class="user-info">'
+        f"{avatar_content}"
+        '<div class="user-meta">'
+        f'<div class="user-action">{user_action}</div>'
+        f"{sub_email}"
+        "</div></div>"
+        f'<div class="user-time-badge mono">{_datetime(item.date)}</div>'
+        "</div>"
+    )
+
+    # 2. 变更统计与标题概览卡片（参考 karin-plugin-git Content 组件）
+    stats_pills: list[str] = []
+    if item.additions:
+        stats_pills.append(f'<span class="stat-pill stat-add mono">+{item.additions}</span>')
+    if item.deletions:
+        stats_pills.append(f'<span class="stat-pill stat-del mono">-{item.deletions}</span>')
+    if item.files_changed:
+        stats_pills.append(f'<span class="stat-files">{item.files_changed} 个文件被更改</span>')
+    stats_pills.append('<span class="dot">•</span>')
+    stats_pills.append(f'<span class="sha mono">{_text(item.sha)}</span>')
+
+    overview_html = (
+        '<div class="commit-overview">'
+        f'<div class="commit-title-text">{_text(item.title)}</div>'
+        f'<div class="commit-stats-bar">{"".join(stats_pills)}</div>'
+        "</div>"
     )
 
     body = (
@@ -375,7 +409,8 @@ def build_commit(
         f'<div class="repo-name is-long">{_text(repo)}</div>'
         '<div class="repo-desc">提交详情</div>'
         "</div></section>"
-        f"{_section('Commit', kv_html)}"
+        f"{user_card_html}"
+        f"{overview_html}"
     )
 
     detail = _html_body(item.body, _MAX_COMMIT_BODY)
@@ -432,7 +467,19 @@ def build_release(
         "</div>"
     )
 
-    rows = [("发布者", rel.author or "未知"), ("时间", _datetime(rel.created_at))]
+    user_card_html = (
+        '<div class="user-card is-release">'
+        '<div class="user-info">'
+        f'<img class="avatar avatar-44" src="{rel.author_avatar}" alt="{_text(rel.author)}" />'
+        '<div class="user-meta">'
+        f'<div class="user-action">发布者 <span class="user-highlight">{_text(rel.author)}</span></div>'
+        f'<div class="user-sub mono">{_datetime(rel.created_at)}</div>'
+        "</div></div>"
+        f'<div class="user-time-badge mono">{_text(rel.tag)}</div>'
+        "</div>"
+    )
+
+    rows = []
     if rel.target:
         rows.append(("目标", rel.target))
     if rel.prerelease:
@@ -443,7 +490,7 @@ def build_release(
         for k, v in rows
     )
 
-    inner = head + kv_html
+    inner = head + kv_html if kv_html else head
     body = (
         '<section class="repo-head">'
         f"{icons.icon_tile(platform, tile=52, size=32)}"
@@ -452,6 +499,7 @@ def build_release(
         f'<div class="repo-name is-long">{_text(repo)}</div>'
         '<div class="repo-desc">版本发布</div>'
         "</div></section>"
+        f"{user_card_html}"
         f"{_section('Release', inner)}"
     )
 
