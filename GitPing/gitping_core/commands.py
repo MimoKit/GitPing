@@ -33,6 +33,8 @@ from .platforms import (
 from .store import SUBSCRIBE_TASK, Binding, Subscription
 
 git_sv = SV("GitPing", priority=5, area="ALL")
+# 单条详情等长指令设为更高优先级（priority 数值更小），避免被短词（如「提交」）抢先拦截
+detail_sv = SV("GitPing详情", priority=4, area="ALL")
 push_sv = SV("GitPing推送", priority=5, area="ALL")
 
 # 平台名 → 令牌配置键
@@ -195,6 +197,11 @@ async def current_command(bot: Bot, ev: Event) -> None:
 @git_sv.on_command(("提交", "commits", "提交记录"), block=True)
 async def commits_command(bot: Bot, ev: Event) -> None:
     """git提交 [数量] [平台:]owner/repo —— 查询提交记录。"""
+    raw_text = (ev.text or "").strip()
+    if raw_text.startswith(("详情", "detail")):
+        ev.text = raw_text.replace("详情", "", 1).replace("detail", "", 1).strip()
+        return await commit_command(bot, ev)
+
     args, ref = await _split_args(ev)
     if ref is None:
         await bot.send(_NO_REPO_HINT)
@@ -230,7 +237,7 @@ async def commits_command(bot: Bot, ev: Event) -> None:
     await _send_image(bot, png)
 
 
-@git_sv.on_command(("提交详情", "commit"), block=True)
+@detail_sv.on_command(("提交详情", "commit"), block=True)
 async def commit_command(bot: Bot, ev: Event) -> None:
     """git提交详情 <sha> [平台:]owner/repo —— 查询单条提交。"""
     args, ref = await _split_args(ev)
