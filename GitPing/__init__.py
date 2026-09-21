@@ -11,9 +11,8 @@ from gsuid_core.sv import Plugins
 
 Plugins(
     name="GitPing",
-    # git 为强制前缀：必须发「git仓库」这类完整写法才会触发。
-    # 触发词只写裸词，框架自动拼成 git+词。
-    force_prefix=["git"],
+    # git 为前缀：支持「git仓库」与带空格的「git 仓库」，大小写兼容
+    force_prefix=["git", "git ", "Git", "Git "],
     allow_empty_prefix=False,
     alias=["GitPing", "Git", "gitping"],
 )

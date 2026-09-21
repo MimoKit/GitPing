@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import os
 from pathlib import Path
+import shutil
 from typing import Literal
 
 from gsuid_core.logger import logger
@@ -70,33 +71,89 @@ def svg_data_uri(svg: str) -> str:
     return f"data:image/svg+xml;base64,{encoded}"
 
 
-def _browsers_root() -> Path:
-    """Playwright 的浏览器安装目录。"""
-    configured = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
-    if configured and configured != "0":
-        return Path(configured)
-    return Path.home() / ".cache" / "ms-playwright"
+def _browsers_roots() -> list[Path]:
+    """收集可能存放 Playwright 或独立浏览器的目录列表。"""
+    roots: list[Path] = []
+    # 1. 环境变量优先
+    for env_k in ("PLAYWRIGHT_BROWSERS_PATH", "CHROME_PATH", "CHROMIUM_PATH", "BROWSER_PATH"):
+        val = os.environ.get(env_k)
+        if val and val != "0":
+            p = Path(val)
+            if p.is_dir() and p not in roots:
+                roots.append(p)
+    # 2. 常见 Playwright 安装目录
+    for p in (
+        Path("/ms-playwright"),
+        Path.home() / ".cache" / "ms-playwright",
+        Path("/root/.cache/ms-playwright"),
+    ):
+        if p.is_dir() and p not in roots:
+            roots.append(p)
+    return roots
 
 
 def _find_chromium() -> Path | None:
-    """定位 Chromium 可执行文件。
+    """定位系统中任意可用的 Chromium / Chrome / Edge 浏览器可执行文件。
 
-    刻意不用 ``sync_playwright()`` 探测：它内部会起自己的事件循环，
-    在已经运行的事件循环里调用会直接抛错（插件运行时必然处于事件循环中），
-    结果是浏览器明明装了却被判为不可用。这里改为直接找可执行文件。
+    不固定任何特定版本号，只要是可用的浏览器即可直接驱动（支持系统全局 Chrome/Edge
+    以及 Playwright 目录下的任意版本）。
     """
-    root = _browsers_root()
-    if not root.is_dir():
-        return None
-    # 目录形如 chromium-1208/chrome-linux64/chrome（新）
-    # 或 chromium-1091/chrome-linux/chrome（旧）
-    for candidate in sorted(root.glob("chromium-*/chrome-linux*/chrome"), reverse=True):
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return candidate
-    # 兜底：headless shell 也能截图
-    for candidate in sorted(root.glob("chromium_headless_shell-*/chrome-linux*/headless_shell"), reverse=True):
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return candidate
+    # 1. 环境变量直接指向可执行文件
+    for env_k in ("CHROME_PATH", "CHROMIUM_PATH", "BROWSER_PATH"):
+        val = os.environ.get(env_k)
+        if val and val != "0":
+            p = Path(val)
+            if p.is_file() and os.access(p, os.X_OK):
+                return p
+
+    # 2. 系统 PATH 中的常见浏览器（系统级安装，无需 Playwright 特供版）
+    for name in (
+        "google-chrome",
+        "google-chrome-stable",
+        "chromium",
+        "chromium-browser",
+        "chrome",
+        "microsoft-edge",
+        "msedge",
+    ):
+        found = shutil.which(name)
+        if found:
+            p = Path(found)
+            if p.is_file() and os.access(p, os.X_OK):
+                return p
+
+    # 3. 常见系统固定安装路径
+    fixed_paths = [
+        Path("/usr/bin/google-chrome"),
+        Path("/usr/bin/google-chrome-stable"),
+        Path("/usr/bin/chromium"),
+        Path("/usr/bin/chromium-browser"),
+        Path("/opt/google/chrome/chrome"),
+        Path("/opt/microsoft/msedge/msedge"),
+        Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+        Path(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
+        Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+        Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        Path("/Applications/Chromium.app/Contents/MacOS/Chromium"),
+    ]
+    for p in fixed_paths:
+        if p.is_file() and os.access(p, os.X_OK):
+            return p
+
+    # 4. 扫描所有可能存在的 Playwright 浏览器目录（递归匹配任意版本号）
+    # 兼容 chromium-*, chromium_headless_shell-*, 任意版本数字
+    for root in _browsers_roots():
+        for candidate in sorted(root.glob("**/chrome*"), reverse=True):
+            if (
+                candidate.is_file()
+                and candidate.name in ("chrome", "chrome.exe", "chrome-headless-shell")
+                and os.access(candidate, os.X_OK)
+            ):
+                return candidate
+        for candidate in sorted(root.glob("**/headless_shell*"), reverse=True):
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return candidate
+
     return None
 
 
@@ -112,9 +169,12 @@ def browser_available() -> bool:
         _browser_available = False
         return False
 
-    _browser_available = _find_chromium() is not None
+    exe = _find_chromium()
+    _browser_available = exe is not None
     if not _browser_available:
-        logger.info("[GitPing] 未找到 Chromium，将使用 GsCore 内置渲染")
+        logger.info("[GitPing] 未找到可用浏览器内核，将使用 GsCore 内置渲染")
+    else:
+        logger.debug(f"[GitPing] 检测到可用浏览器内核: {exe}")
     return _browser_available
 
 
@@ -126,7 +186,7 @@ def resolve_backend() -> ResolvedBackend:
     if configured == "browser":
         if browser_available():
             return "browser"
-        logger.warning("[GitPing] 配置要求浏览器渲染，但 Chromium 不可用，已回退内置渲染")
+        logger.warning("[GitPing] 配置要求浏览器渲染，但未找到可用浏览器内核，已回退内置渲染")
         return "builtin"
     return "browser" if browser_available() else "builtin"
 
@@ -158,8 +218,13 @@ async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes
 async def _render_browser(html: str, *, min_height: int, scale: float) -> bytes:
     from playwright.async_api import async_playwright
 
+    chromium_path = _find_chromium()
+    launch_kwargs = {"headless": True, "args": _CHROMIUM_ARGS}
+    if chromium_path is not None:
+        launch_kwargs["executable_path"] = str(chromium_path)
+
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, args=_CHROMIUM_ARGS)
+        browser = await p.chromium.launch(**launch_kwargs)
         try:
             page = await browser.new_page(
                 viewport={"width": CANVAS_WIDTH, "height": min_height},
