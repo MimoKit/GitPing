@@ -235,8 +235,8 @@ def request_timeout() -> float:
     return float(config_int("request_timeout", 15))
 
 
-# 采用 Retina 2.0x 视网膜超高清（1080px -> 2160px 宽度，发丝级文字细节，完美兼顾速度与稳定性）
-DEFAULT_SCALE = 2.0
+# 采用 2.5x 超视网膜极清比例（1080px -> 2700px 宽度，发丝级文字细节，兼顾秒级出图与极致画质）
+DEFAULT_SCALE = 2.5
 
 
 async def render(html: str, *, min_height: int = 600, scale: float = 0) -> bytes:
