@@ -1,0 +1,430 @@
+/* ============================================================
+   GitPing 卡片设计系统
+   画布固定 1080px 宽（截图画布，不随视口流动）。
+
+   字体栈优先 HarmonyOS Sans SC（kkk 用的那套），其次霞鹜文楷、
+   GsCore 自带的 MiSans。两套渲染后端注入同一个字体文件。
+
+   ⚠️ 两套后端共用这一份样式，因此只能用双方都支持的特性：
+   实测 GsCore 内置渲染器（pytakumi）不支持 backdrop-filter，
+   也不支持内联 <svg> 的尺寸控制；图标一律用 background-image
+   加载 PNG（见 .ico），不用 <img> 也不用 <svg>。
+   ============================================================ */
+:root {
+  --bg:        #f2f2f4;
+  --surface:   #ffffff;
+  --surface-2: #fafafb;
+  --line:      #e7e7ec;
+  --line-soft: #f0f0f4;
+
+  --ink:       #1a1a1f;
+  --ink-2:     #4d4d57;
+  --ink-3:     #6c6c77;
+  --ink-4:     #94949e;
+
+  /* 强调色由卡片注入（--brand / --brand-soft），回退到蓝色。
+     这样同一套模板能跟随平台切换情绪：GitHub 近黑、Gitee 红、GitCode 蓝、CNB 青。 */
+  --brand:       #2f6bff;
+  --brand-soft:  #eef3ff;
+  --brand-line:  rgba(47, 107, 255, .22);
+  --brand-ink:   #2354c7;
+
+  --accent:      var(--brand);
+  --accent-soft: var(--brand-soft);
+
+  --ok:   #1f9d55;
+  --warn: #c77700;
+  --err:  #c8342c;
+
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+
+  --sh-1: 0 1px 2px rgba(20, 20, 28, .04);
+  --sh-2: 0 2px 8px rgba(20, 20, 28, .05), 0 1px 2px rgba(20, 20, 28, .03);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 1080px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "HarmonyOS Sans SC", "LXGW WenKai", "MiSans", "Noto Sans CJK SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+.canvas {
+  position: relative;
+  overflow: hidden;
+  padding: 40px 44px 34px;
+  background: var(--bg);
+}
+
+/* 背景：极淡点阵，只给一点质感 */
+.canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--ink) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: .022;
+}
+
+.content { position: relative; }
+
+/* ── 平台图标：用 background-image，两套后端尺寸都正确 ── */
+.ico {
+  display: inline-block;
+  flex: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  vertical-align: middle;
+}
+.ico-20 { width: 20px; height: 20px; }
+.ico-24 { width: 24px; height: 24px; }
+.ico-28 { width: 28px; height: 28px; }
+.ico-32 { width: 32px; height: 32px; }
+.ico-44 { width: 44px; height: 44px; }
+
+/* 图标底板（带品牌色淡底） */
+.ico-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 12px;
+}
+.tile-44 { width: 44px; height: 44px; border-radius: 13px; }
+.tile-52 { width: 52px; height: 52px; border-radius: 15px; }
+
+/* ── 顶栏 ───────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+/* 品牌色短划线：比整条色带克制，又能一眼区分平台 */
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 76px;
+  height: 2px;
+  background: var(--brand);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-name {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+}
+.brand-sub {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-top: 3px;
+}
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 15px;
+  color: var(--ink-2);
+  box-shadow: var(--sh-1);
+}
+
+/* ── 仓库头 ─────────────────────────────────────────── */
+.repo-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 28px 0 24px;
+}
+/* 头部左侧品牌色竖条，把注意力引到仓库名 */
+.repo-head::before {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 0;
+}
+.repo-title-wrap { flex: 1; min-width: 0; }
+.repo-owner {
+  font-size: 19px;
+  color: var(--ink-3);
+  margin-bottom: 5px;
+  letter-spacing: .01em;
+}
+.repo-name {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+}
+.repo-name.is-long { font-size: 34px; }
+.repo-desc {
+  margin-top: 12px;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tag {
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.tag.is-accent {
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+
+/* ── 统计条 ─────────────────────────────────────────── */
+.stats {
+  display: flex;
+  gap: 12px;
+}
+.stat {
+  flex: 1;
+  padding: 16px 20px 18px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+/* 每个统计块顶部一小段品牌色，形成节奏而不喧哗 */
+.stat .k {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.stat .k::before {
+  content: "";
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--brand);
+  opacity: .85;
+}
+.stat .v {
+  margin-top: 9px;
+  font-size: 31px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.01em;
+}
+.stat .v.is-sm { font-size: 20px; font-weight: 600; letter-spacing: 0; }
+
+/* ── 区块 ───────────────────────────────────────────── */
+.section { margin-top: 24px; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.section-title::before {
+  content: "";
+  width: 4px;
+  height: 17px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+.section-note { font-size: 14px; color: var(--ink-4); }
+
+.panel {
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+}
+
+/* ── 提交行 ─────────────────────────────────────────── */
+.commit {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.commit:last-child { border-bottom: none; }
+.commit .meta { flex: 1; min-width: 0; }
+.commit .msg {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.commit .sub {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 7px;
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.sha {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+/* 增删行数 + 比例条 */
+.diff { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.diff .add { color: var(--ok); }
+.diff .del { color: var(--err); }
+.diffbar {
+  display: flex;
+  width: 76px;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--line);
+}
+.diffbar .a { background: var(--ok); }
+.diffbar .d { background: var(--err); }
+
+/* 提交详情里的信息条 */
+.kv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 16px;
+}
+.kv:last-child { border-bottom: none; }
+.kv .k { color: var(--ink-4); min-width: 76px; }
+.kv .v { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+
+.commit-body {
+  padding: 16px 18px;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── 版本发布 ───────────────────────────────────────── */
+.release-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.release-tag {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-line);
+  color: var(--brand-ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+.release-tag.is-pre {
+  background: #fff7ea;
+  border-color: rgba(199, 119, 0, .25);
+  color: #a86400;
+}
+.release-name { flex: 1; font-size: 21px; font-weight: 600; }
+
+/* Markdown 正文的简化排版 */
+.md { padding: 16px 18px; font-size: 17px; line-height: 1.7; color: var(--ink-2); }
+.md h1, .md h2, .md h3 {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 14px 0 7px;
+}
+.md h1:first-child, .md h2:first-child, .md h3:first-child { margin-top: 0; }
+.md p { margin: 7px 0; }
+.md ul { margin: 7px 0; padding-left: 20px; }
+.md li { margin: 4px 0; }
+.md code {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 15px;
+}
+.md a { color: var(--brand-ink); text-decoration: none; }
+.md hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
+
+/* 资产列表 */
+.assets { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 18px; }
+.asset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.asset .sz { color: var(--ink-4); font-size: 13px; }
+
+/* ── 页脚 ───────────────────────────────────────────── */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  color: var(--ink-4);
+}
+.footer .mark { font-weight: 600; letter-spacing: .18em; text-transform: uppercase; }
+
+/* 空态 */
+.empty { padding: 26px 18px; text-align: center; font-size: 17px; color: var(--ink-4); }

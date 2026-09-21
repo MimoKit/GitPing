@@ -1,0 +1,14 @@
+[project]
+name = "git-ping"
+version = "0.1.0"
+description = "GitPing：GsCore 的 Git 仓库查询与订阅插件，支持 GitHub / Gitee / GitCode / CNB"
+requires-python = ">=3.11"
+# 依赖必须全部列在 [project] dependencies 下。
+# GsCore 的自动装依赖只解析这一段，不读 [project.optional-dependencies]，
+# 放进 optional 的依赖永远不会被自动安装。
+dependencies = [
+    "httpx>=0.27.0",
+]
+
+[tool.gsuid]
+plugin_name = "GitPing"
